@@ -8,8 +8,8 @@
 
     class Program
     {
-        private readonly static IEnumerable<string> IgnoreFolders = ConfigurationManager.AppSettings["IgnoreFolders"].Split(';');
-        private readonly static IEnumerable<string> IgnoreFiles = ConfigurationManager.AppSettings["IgnoreFiles"].Split(';');
+        private readonly static IEnumerable<string> IgnoreFolders = ConfigurationManager.AppSettings["IgnoreFolders"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        private readonly static IEnumerable<string> IgnoreFiles = ConfigurationManager.AppSettings["IgnoreFiles"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
         private readonly static string DefaultReplacement = ConfigurationManager.AppSettings["DefaultReplacement"];
 
         private static string _From;
