@@ -1,4 +1,4 @@
-﻿namespace GlobalTextReplacer
+﻿namespace CopyAndReplace
 {
     using System;
     using System.Collections.Generic;
@@ -10,46 +10,23 @@
     {
         private readonly static IEnumerable<string> IgnoreFolders = ConfigurationManager.AppSettings["IgnoreFolders"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
         private readonly static IEnumerable<string> IgnoreFiles = ConfigurationManager.AppSettings["IgnoreFiles"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-        private readonly static string DefaultReplacement = ConfigurationManager.AppSettings["DefaultReplacement"];
 
-        private static string _From;
-        private static string _To;
         private static int _FilesAndFoldersTouched;
+        private static GlobalTextReplacerArgs _Args;
 
         static void Main(string[] args)
         {
-            var path = Path.GetDirectoryName(typeof(Program).Assembly.Location);
-
-            while (true)
+            _Args = new GlobalTextReplacerArgs(args);
+            if (!_Args.IsValid)
             {
-                Console.WriteLine($"Enter text to be replaced(press return for default: {DefaultReplacement}");
-                _From = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(_From))
-                    _From = DefaultReplacement;
-
-                Console.WriteLine($"Enter text to replace with");
-                _To = Console.ReadLine();
-
-                Console.WriteLine($"Replace: '{_From}' with '{_To}' ?");
-                Console.WriteLine("Type Y to continue");
-
-                if (Console.ReadLine().ToUpper() == "Y")
-                    break;
-
-                Console.WriteLine("");
-                Console.WriteLine("TRY AGAIN");
-                Console.WriteLine("");
+                Console.WriteLine(_Args.Usage());
+                return;
             }
 
-            UpdateFolder(path);
-
-            Console.WriteLine("");
-            Console.WriteLine($"Completed. {_FilesAndFoldersTouched} files or folders updated.");
-            Console.WriteLine("Press any key to exit");
-            Console.Read();
+            Directory.CreateDirectory(_Args.FullTargetPath);
+            CopyFolder(new DirectoryInfo(_Args.SourceFolder), new DirectoryInfo(_Args.FullTargetPath));
+            UpdateFolder(_Args.FullTargetPath);
         }
-
 
         public static void UpdateFolder(string path)
         {
@@ -69,20 +46,20 @@
                 RunWithoutException(() =>
                 {
                     var contents = File.ReadAllText(file);
-                    if (contents.Contains(_From))
+                    if (contents.Contains(_Args.SourceText))
                     {
                         _FilesAndFoldersTouched++;
-                        contents = contents.Replace(_From, _To);
+                        contents = contents.Replace(_Args.SourceText, _Args.ReplacementText);
                         File.WriteAllText(file, contents);
                     }
                 });
 
                 RunWithoutException(() =>
                 {
-                    if (fileName.Replace(_From, _To) != fileName)
+                    if (fileName.Replace(_Args.SourceText, _Args.ReplacementText) != fileName)
                     {
                         _FilesAndFoldersTouched++;
-                        File.Move(file, Path.Combine(path, fileName.Replace(_From, _To)));
+                        File.Move(file, Path.Combine(path, fileName.Replace(_Args.SourceText, _Args.ReplacementText)));
                     }
                 });
             }
@@ -96,13 +73,22 @@
                 UpdateFolder(folder);
                 RunWithoutException(() =>
                 {
-                    if (folderName.Replace(_From, _To) != folderName)
+                    if (folderName.Replace(_Args.SourceText, _Args.ReplacementText) != folderName)
                     {
                         _FilesAndFoldersTouched++;
-                        Directory.Move(folder, Path.Combine(Path.GetDirectoryName(folder), folderName.Replace(_From, _To)));
+                        Directory.Move(folder, Path.Combine(Path.GetDirectoryName(folder), folderName.Replace(_Args.SourceText, _Args.ReplacementText)));
                     }
                 });
             }
+        }
+
+        public static void CopyFolder(DirectoryInfo source, DirectoryInfo target)
+        {
+            foreach (DirectoryInfo dir in source.GetDirectories())
+                CopyFolder(dir, target.CreateSubdirectory(dir.Name));
+
+            foreach (FileInfo file in source.GetFiles())
+                file.CopyTo(Path.Combine(target.FullName, file.Name));
         }
     }
 }

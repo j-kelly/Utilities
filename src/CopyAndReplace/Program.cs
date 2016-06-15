@@ -12,22 +12,35 @@
         private readonly static IEnumerable<string> IgnoreFiles = ConfigurationManager.AppSettings["IgnoreFiles"].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
         private static int _FilesAndFoldersTouched;
-        private static GlobalTextReplacerArgs _Args;
+        private static CopyAndReplaceArgs _Args;
 
-        static void Main(string[] args)
+        // /source:"c:\myFolder\CopyMeXXX" /target:c:\myFolder /text:XXX /replace:YYYYY 
+        static int Main(string[] args)
         {
-            _Args = new GlobalTextReplacerArgs(args);
-            if (!_Args.IsValid)
+
+            try
+            {
+                _Args = new CopyAndReplaceArgs(args);
+                if (!_Args.IsValid)
+                {
+                    Console.WriteLine(_Args.ToString());
+                    Console.WriteLine(_Args.Usage());
+                    return -1;
+                }
+
+                Directory.CreateDirectory(_Args.FullTargetPath);
+                CopyFolder(new DirectoryInfo(_Args.SourceFolder), new DirectoryInfo(_Args.FullTargetPath));
+                UpdateFolder(_Args.FullTargetPath);
+
+                Console.WriteLine($"Completed copy and replace at: {_Args.FullTargetPath}");
+                return 0;
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine(_Args.ToString());
-
-                Console.WriteLine(_Args.Usage());
-                return;
+                Console.WriteLine(ex.ToString());
+                return -1;
             }
-
-            Directory.CreateDirectory(_Args.FullTargetPath);
-            CopyFolder(new DirectoryInfo(_Args.SourceFolder), new DirectoryInfo(_Args.FullTargetPath));
-            UpdateFolder(_Args.FullTargetPath);
         }
 
         public static void UpdateFolder(string path)
@@ -82,6 +95,7 @@
                     }
                 });
             }
+
         }
 
         public static void CopyFolder(DirectoryInfo source, DirectoryInfo target)
