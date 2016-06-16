@@ -1,7 +1,6 @@
 namespace CopyAndReplace
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -9,10 +8,15 @@ namespace CopyAndReplace
     // /source:"c:\myFolder\CopyMeXXX" /target:c:\myFolder /text:XXX /replace:YYYYY 
     public class CopyAndReplaceArgs : ArgsParser
     {
+        // anon
+        public bool Verbose { get { return AnonParams.Contains("verbose"); } }
+        public bool AllowSpaces { get { return AnonParams.Contains("allowSpaces"); } }
+
+        // param
         public string SourceFolder { get { return Path.GetFullPath(PrefixedParams["source"]); } }
         public string TargetFolder { get { return Path.GetFullPath(PrefixedParams["target"]); } }
         public string SourceText { get { return PrefixedParams["text"]; } }
-        public string ReplacementText { get { return PrefixedParams["replace"]; } }
+        public string ReplacementText { get { return AllowSpaces ? PrefixedParams["replace"] : PrefixedParams["replace"].Replace(" ", "_"); } }
         public string FullTargetPath
         {
             get
@@ -34,6 +38,8 @@ namespace CopyAndReplace
             retVal.AppendLine($"\t/target: [target folder (output folder will be taget + replace)]");
             retVal.AppendLine($"\t/text: [text to be replaced]");
             retVal.AppendLine($"\t/replace: [replacement text]");
+            retVal.AppendLine($"\tverbose");
+            retVal.AppendLine($"\tallowSpaces");
             retVal.AppendLine("//");
             retVal.AppendLine("// *******************************************");
             return retVal.ToString();

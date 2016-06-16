@@ -21,9 +21,12 @@
             try
             {
                 _Args = new CopyAndReplaceArgs(args);
+
+                if (_Args.Verbose)
+                    Console.WriteLine(_Args.ToString());
+
                 if (!_Args.IsValid)
                 {
-                    Console.WriteLine(_Args.ToString());
                     Console.WriteLine(_Args.Usage());
                     return -1;
                 }
